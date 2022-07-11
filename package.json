@@ -1,0 +1,19 @@
+{
+  "name": "l-store",
+  "version": "1.0.0",
+  "description": "a easy react storage lib",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "node ./build/build.js",
+    "dep": "npm install && cd test/test-l-store && npm install",
+    "test": "npm run build && npm link && cd test/test-l-store && npm link l-store && npm run dev"
+  },
+  "keywords": [],
+  "author": "Renjun Lin",
+  "license": "ISC",
+  "dependencies": {
+    "esbuild": "^0.14.49",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

@@ -1,39 +1,60 @@
 import React, { useEffect, useReducer, useState } from "react";
+import { isObject } from "../util";
 import log from "./log";
 
 
 
-const dep = new WeakMap();
+const IS_L_STORAGE = Symbol("is_l_storage_llll");
+const dep_map = new WeakMap();
 
 // proxy handler
 const handler = {
     get(target:any,key:any) {
         log.normal("get key: ", key);
+        if(_gUpdater) {
+            let deps = dep_map.get(target);
+            if(!deps) {
+                deps = [];
+                dep_map.set(target,deps);
+            }
+            deps.push(_gUpdater);
+        }
         return target[key];
     },
     set(target:any,key:any,val:any,receiver:any):any {
         const result = Reflect.set(target, key, val, receiver);
-        target[key] = val;
         log.normal("set! 更新依赖")
-        log.normal("放入sessionStorage:", key)
-        console.log(key);
-        // 执行依赖函数
-        // for(let fn of dep) {
-            // fn();
-        // }
-        // return result;
-        return 1;
+        log.normal("放入sessionStorage:", key,target);
+        let deps = dep_map.get(target);
+        if(deps) {
+            // 执行依赖函数
+            for(let fn of deps) {
+                fn(target[key],val);
+            }
+        }
+        target[key] = val;
+        return result;
     }
 }
 // proxy 不会监听深层对象喔--
 let _store: any = new Proxy({},handler);
- 
+
+// 设置全局依赖
+let _gUpdater: updater = null;
+function _setUpdater(fn: updater) {
+    _gUpdater = fn;
+}
+
 function makeProxy(data,isDeep:boolean = false) {
+    if(!isObject(data)) { //不是对象直接返回
+        return data;
+    }
     if(!isDeep) {
         return new Proxy(data,handler);
     }
     for(let key in data) {
-        data[key] = new Proxy(data,handler);
+        console.log(data,key);
+        data[key] = makeProxy(data[key],isDeep);
     }
     return new Proxy(data,handler);
 }
@@ -45,13 +66,26 @@ function initLogLevel(logLevel: number) {
 
 // 监听浅层对象
 function initStoreShallow(data: any) {
-    _store = makeProxy(data,false);
+    initStore(data,false);
 }
 
 // 监听深层对象
 function initStoreDeep(data: any) {
-    _store = makeProxy(data,true);
+    initStore(data,true);
 }
+
+function initStore(data: any,isDeep: boolean) {
+    if(_store === data) {
+        return ;
+    }
+    if(data[IS_L_STORAGE]) {
+        _store = data;
+        return ;
+    }
+    data[IS_L_STORAGE] = true;
+    _store = makeProxy(data,isDeep);
+}
+
 
 function useStore(fn) {
     // 注意这里使用useReducer才可以---要是使用useState会无法更新--useState必须要在对应组件内调用才会有效
@@ -61,7 +95,12 @@ function useStore(fn) {
         const updater = () => {
             forceRender();
         }
-        dep.push(updater);
+        _setUpdater(updater);
+        // 访问依赖链条
+        
+
+        const deps = dep_map.get()
+        // 清楚更新函数
         return ()=>{
             dep.forEach((v,index)=>{
                 if(v===updater) {
@@ -70,7 +109,6 @@ function useStore(fn) {
             })
         }
     },[]);
-
     return _store;
 }
 
@@ -84,4 +122,5 @@ export  {
     initStoreDeep, 
     useStore,
     getStore,
+    _setUpdater,
 }

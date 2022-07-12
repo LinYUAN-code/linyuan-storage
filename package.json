@@ -1,19 +1,29 @@
 {
-  "name": "l-store",
-  "version": "1.0.0",
+  "name": "linyuan-storage",
+  "version": "3.0.4",
   "description": "a easy react storage lib",
-  "main": "./dist/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "node ./build/build.js",
     "dep": "npm install && cd test/test-l-store && npm install",
-    "test": "npm run build && npm link && cd test/test-l-store && npm link l-store && npm run dev"
+    "test": "npm run build && npm link && cd test/test-l-store && npm link linyuan-storage && npm run dev"
   },
-  "keywords": [],
-  "author": "Renjun Lin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LinYUAN-code/linyuan-storage.git"
+  },
+  "keywords": [
+    "react",
+    "simple",
+    "global state"
+  ],
+  "author": "lin1138842605",
   "license": "ISC",
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "esbuild": "^0.14.49",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "esbuild-node-externals": "^1.4.1",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
   }
 }

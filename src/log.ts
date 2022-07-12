@@ -7,18 +7,19 @@ enum LOG_LEVEL{
 let __log_level = LOG_LEVEL.Normal;
 
 function setLogLevel(logLevel: LOG_LEVEL) {
+    console.log("setLogLevel:", logLevel);
     __log_level = logLevel;
 }
 
 
 function normal(...msg) {
-    if(__log_level >= LOG_LEVEL.Normal) {
+    if(__log_level <= LOG_LEVEL.Normal) {
         console.log(...msg);
     }
 }
 
 function error(...msg) {
-    if(__log_level >= LOG_LEVEL.Error) {
+    if(__log_level <= LOG_LEVEL.Error) {
         console.log(...msg);
     }
 }

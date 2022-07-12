@@ -1,36 +1,39 @@
-import React, { useEffect, useReducer, useState } from "react";
-import { isObject } from "../util";
+import { useEffect, useReducer, useState } from "react";
+import { clearFromArray, isArray, isObject } from "./util";
 import log from "./log";
-
-
 
 const IS_L_STORAGE = Symbol("is_l_storage_llll");
 const dep_map = new WeakMap();
+// 没有传入Selector 会被加入到这个依赖队列
+const all_deps: updater_fn[] = [];
 
 // proxy handler
 const handler = {
     get(target:any,key:any) {
-        log.normal("get key: ", key);
+        log.normal("get (target) (key)", target, key);
         if(_gUpdater) {
             let deps = dep_map.get(target);
             if(!deps) {
                 deps = [];
                 dep_map.set(target,deps);
             }
+            _gDepsArr.push(deps);
             deps.push(_gUpdater);
         }
         return target[key];
     },
     set(target:any,key:any,val:any,receiver:any):any {
         const result = Reflect.set(target, key, val, receiver);
-        log.normal("set! 更新依赖")
-        log.normal("放入sessionStorage:", key,target);
+        log.normal("set (target) (key) (value)",target,key,val);
         let deps = dep_map.get(target);
         if(deps) {
             // 执行依赖函数
             for(let fn of deps) {
                 fn(target[key],val);
             }
+        }
+        for(let fn of all_deps) {
+            fn(target[key],val);
         }
         target[key] = val;
         return result;
@@ -41,10 +44,17 @@ let _store: any = new Proxy({},handler);
 
 // 设置全局依赖
 let _gUpdater: updater = null;
-function _setUpdater(fn: updater) {
+let _gDepsArr: any[] = [];
+function _setUpdater(fn: updater_fn) {
     _gUpdater = fn;
 }
+function _setDepsArr(arr: any[]) {
+    _gDepsArr = arr;
+}
 
+function makeReactive(data,isDeep:boolean = false) {
+    return makeProxy(data,isDeep);
+}
 function makeProxy(data,isDeep:boolean = false) {
     if(!isObject(data)) { //不是对象直接返回
         return data;
@@ -53,7 +63,6 @@ function makeProxy(data,isDeep:boolean = false) {
         return new Proxy(data,handler);
     }
     for(let key in data) {
-        console.log(data,key);
         data[key] = makeProxy(data[key],isDeep);
     }
     return new Proxy(data,handler);
@@ -61,6 +70,7 @@ function makeProxy(data,isDeep:boolean = false) {
 
 // 0:Normal 1:Error
 function initLogLevel(logLevel: number) {
+    console.log(initLogLevel);
     log.setLogLevel(logLevel);
 }
 
@@ -95,32 +105,51 @@ function useStore(fn) {
         const updater = () => {
             forceRender();
         }
-        _setUpdater(updater);
         // 访问依赖链条
-        
-
-        const deps = dep_map.get()
-        // 清楚更新函数
-        return ()=>{
-            dep.forEach((v,index)=>{
-                if(v===updater) {
-                    dep.splice(index,1);
+        if(fn) {
+            let deps_arr = [];
+            _setUpdater(updater);
+            _setDepsArr(deps_arr);
+            fn(getStore());   
+            _gUpdater = null;     
+            // 清除更新函数
+            return ()=>{
+                for(let deps of deps_arr) {
+                    clearFromArray(updater,deps);
                 }
-            })
+            }
+        } else {
+            // 如果没有传入fn -- 将其添加到所有的依赖中去
+            all_deps.push(updater);
+            return () => {
+                clearFromArray(updater,all_deps);
+            }
         }
     },[]);
     return _store;
 }
 
 // 直接getStore获取到的不会注册依赖回调
+// 非react组件可以通过这个函数获取对象
 function getStore() {
     return _store;
 }
 
-export  {
+// 合并任务
+function batchWork(fn) {
+
+}
+
+
+
+initLogLevel(1);
+
+export {
     initStoreShallow,
     initStoreDeep, 
     useStore,
     getStore,
     _setUpdater,
+    initLogLevel,
+    makeReactive,
 }

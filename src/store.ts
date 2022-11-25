@@ -84,7 +84,7 @@ function initStoreShallow(data: any) {
 }
 
 // 监听深层对象
-function initStoreDeep(data: any) {
+function initStoreDeep<T>(data: T) {
   initStore(data, true);
 }
 

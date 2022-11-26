@@ -74,7 +74,6 @@ function makeProxy(data: any, isDeep: boolean = false) {
 
 // 0:Normal 1:Error
 function initLogLevel(logLevel: number) {
-  console.log(initLogLevel);
   log.setLogLevel(logLevel);
 }
 
